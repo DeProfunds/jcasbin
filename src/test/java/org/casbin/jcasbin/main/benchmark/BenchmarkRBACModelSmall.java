@@ -46,9 +46,9 @@ public class BenchmarkRBACModelSmall {
             .include(BenchmarkRBACModelSmall.class.getName())
             .exclude("Pref")
             .warmupIterations(3)
-            .measurementIterations(1)
+            .measurementIterations(5)
             .addProfiler(GCProfiler.class)
-            .forks(1)
+            .forks(2)
             .build();
         new Runner(opt).run();
     }

@@ -36,9 +36,9 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.AverageTime)
 @Warmup(iterations = 3)
-@Measurement(iterations = 3)
+@Measurement(iterations = 5)
 @Threads(1)
-@Fork(1)
+@Fork(2)
 @State(value = Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class BenchmarkAllModelApi {
