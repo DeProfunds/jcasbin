@@ -37,15 +37,15 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class BenchmarkRoleManager {
 
-    public static Enforcer smallEnforcer;
-    public static Enforcer mediumEnforcer;
-    public static Enforcer largeEnforcer;
-    public static Enforcer buildRoleLinksWithPattern;
-    public static Enforcer buildRoleLinksWithDomainPattern;
-    public static Enforcer buildRoleLinksWithPatternAndDomainPattern;
-    public static Enforcer hasLinkWithPattern;
-    public static Enforcer hasLinkWithDomainPattern;
-    public static Enforcer hasLinkWithPatternAndDomainPattern;
+    public Enforcer smallEnforcer;
+    public Enforcer mediumEnforcer;
+    public Enforcer largeEnforcer;
+    public Enforcer buildRoleLinksWithPattern;
+    public Enforcer buildRoleLinksWithDomainPattern;
+    public Enforcer buildRoleLinksWithPatternAndDomainPattern;
+    public Enforcer hasLinkWithPattern;
+    public Enforcer hasLinkWithDomainPattern;
+    public Enforcer hasLinkWithPatternAndDomainPattern;
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
@@ -56,64 +56,8 @@ public class BenchmarkRoleManager {
         new Runner(opt).run();
     }
 
-    @Benchmark
-    public static void roleManagerSmall() {
-        RoleManager rm = smallEnforcer.getRoleManager();
-        for (int i = 0; i < 100; i++) {
-            rm.hasLink("user501", "group" + i);
-        }
-    }
-
-    @Benchmark
-    public static void roleManagerMedium() {
-        RoleManager rm = mediumEnforcer.getRoleManager();
-        for (int i = 0; i < 1000; i++) {
-            rm.hasLink("user501", "group" + i);
-        }
-    }
-
-    @Benchmark
-    public static void roleManagerLarge() {
-        RoleManager rm = largeEnforcer.getRoleManager();
-        for (int i = 0; i < 10000; i++) {
-            rm.hasLink("user501", "group" + i);
-        }
-    }
-
-    @Benchmark
-    public static void buildRoleLinksWithPatternLarge() {
-        buildRoleLinksWithPattern.buildRoleLinks();
-    }
-
-    @Benchmark
-    public static void buildRoleLinksWithDomainPatternLarge() {
-        buildRoleLinksWithDomainPattern.buildRoleLinks();
-    }
-
-    @Benchmark
-    public static void buildRoleLinksWithPatternAndDomainPatternLarge() {
-        buildRoleLinksWithPatternAndDomainPattern.buildRoleLinks();
-    }
-
-    @Benchmark
-    public static void hasLinkWithPatternLarge() {
-        RoleManager rm = hasLinkWithPattern.getRoleManager();
-        rm.hasLink("staffUser1001", "staff001", "/orgs/1/sites/site001");
-    }
-
-    @Benchmark
-    public static void hasLinkWithDomainPatternLarge() {
-        RoleManager rm = hasLinkWithDomainPattern.getRoleManager();
-        rm.hasLink("staffUser1001", "staff001", "/orgs/1/sites/site001");
-    }
-
-    @Benchmark
-    public static void hasLinkWithPatternAndDomainPatternLarge() {
-        RoleManager rm = hasLinkWithPatternAndDomainPattern.getRoleManager();
-        rm.hasLink("staffUser1001", "staff001", "/orgs/1/sites/site001");
-    }
-
-    static {
+    @Setup(Level.Trial)
+    public void setup() {
         smallEnforcer = initEnforcer(100, 1000);
         mediumEnforcer = initEnforcer(1000, 10000);
         largeEnforcer = initEnforcer(10000, 100000);
@@ -137,6 +81,63 @@ public class BenchmarkRoleManager {
         hasLinkWithPatternAndDomainPattern = new Enforcer("examples/performance/rbac_with_pattern_large_scale_model.conf", "examples/performance/rbac_with_pattern_large_scale_policy.csv");
         hasLinkWithPatternAndDomainPattern.addNamedMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
         hasLinkWithPatternAndDomainPattern.addNamedDomainMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
+    }
+
+    @Benchmark
+    public void roleManagerSmall() {
+        RoleManager rm = smallEnforcer.getRoleManager();
+        for (int i = 0; i < 100; i++) {
+            rm.hasLink("user501", "group" + i);
+        }
+    }
+
+    @Benchmark
+    public void roleManagerMedium() {
+        RoleManager rm = mediumEnforcer.getRoleManager();
+        for (int i = 0; i < 1000; i++) {
+            rm.hasLink("user501", "group" + i);
+        }
+    }
+
+    @Benchmark
+    public void roleManagerLarge() {
+        RoleManager rm = largeEnforcer.getRoleManager();
+        for (int i = 0; i < 10000; i++) {
+            rm.hasLink("user501", "group" + i);
+        }
+    }
+
+    @Benchmark
+    public void buildRoleLinksWithPatternLarge() {
+        buildRoleLinksWithPattern.buildRoleLinks();
+    }
+
+    @Benchmark
+    public void buildRoleLinksWithDomainPatternLarge() {
+        buildRoleLinksWithDomainPattern.buildRoleLinks();
+    }
+
+    @Benchmark
+    public void buildRoleLinksWithPatternAndDomainPatternLarge() {
+        buildRoleLinksWithPatternAndDomainPattern.buildRoleLinks();
+    }
+
+    @Benchmark
+    public void hasLinkWithPatternLarge() {
+        RoleManager rm = hasLinkWithPattern.getRoleManager();
+        rm.hasLink("staffUser1001", "staff001", "/orgs/1/sites/site001");
+    }
+
+    @Benchmark
+    public void hasLinkWithDomainPatternLarge() {
+        RoleManager rm = hasLinkWithDomainPattern.getRoleManager();
+        rm.hasLink("staffUser1001", "staff001", "/orgs/1/sites/site001");
+    }
+
+    @Benchmark
+    public void hasLinkWithPatternAndDomainPatternLarge() {
+        RoleManager rm = hasLinkWithPatternAndDomainPattern.getRoleManager();
+        rm.hasLink("staffUser1001", "staff001", "/orgs/1/sites/site001");
     }
 
     static Enforcer initEnforcer(int roleNum, int userNum) {

@@ -31,18 +31,22 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkRBACModelWithResourceRoles {
-    private static Enforcer e;
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    static {
-        e = new Enforcer("examples/rbac_with_resource_roles_model.conf", "", false);
-        e.enableAutoBuildRoleLinks(false);
-        e.addPolicy("alice", "data1", "read");
-        e.addPolicy("bob", "data2", "write");
-        e.addPolicy("data_group_admin", "data_group", "write");
-        e.addGroupingPolicy("alice", "data_group_admin");
-        e.addNamedGroupingPolicy("g2", "data1", "data_group");
-        e.addNamedGroupingPolicy("g2", "data2", "data_group");
-        e.buildRoleLinks();
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/rbac_with_resource_roles_model.conf", "", false);
+            e.enableAutoBuildRoleLinks(false);
+            e.addPolicy("alice", "data1", "read");
+            e.addPolicy("bob", "data2", "write");
+            e.addPolicy("data_group_admin", "data_group", "write");
+            e.addGroupingPolicy("alice", "data_group_admin");
+            e.addNamedGroupingPolicy("g2", "data1", "data_group");
+            e.addNamedGroupingPolicy("g2", "data2", "data_group");
+            e.buildRoleLinks();
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -59,7 +63,7 @@ public class BenchmarkRBACModelWithResourceRoles {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelWithResourceRoles() {
-        e.enforce("alice", "data1", "read");
+    public void benchmarkRBACModelWithResourceRoles(BenchmarkState state) {
+        state.e.enforce("alice", "data1", "read");
     }
 }
