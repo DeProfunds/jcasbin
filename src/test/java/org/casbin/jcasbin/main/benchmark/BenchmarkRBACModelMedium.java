@@ -27,18 +27,22 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkRBACModelMedium {
-    private static Enforcer e;
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    static {
-        e = new Enforcer("examples/rbac_model.conf", "", false);
-        e.enableAutoBuildRoleLinks(false);
-        for (int i = 0; i < 1000; i++) {
-            e.addPolicy(String.format("group%d", i), String.format("data%d", i / 10), "read");
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/rbac_model.conf", "", false);
+            e.enableAutoBuildRoleLinks(false);
+            for (int i = 0; i < 1000; i++) {
+                e.addPolicy(String.format("group%d", i), String.format("data%d", i / 10), "read");
+            }
+            for (int i = 0; i < 10000; i++) {
+                e.addGroupingPolicy(String.format("user%d", i), String.format("group%d", i / 10));
+            }
+            e.buildRoleLinks();
         }
-        for (int i = 0; i < 10000; i++) {
-            e.addGroupingPolicy(String.format("user%d", i), String.format("group%d", i / 10));
-        }
-        e.buildRoleLinks();
     }
 
     public static void main(String args[]) throws RunnerException {
@@ -55,7 +59,7 @@ public class BenchmarkRBACModelMedium {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelMedium() {
-        e.enforce("user5001", "data150", "read");
+    public void benchmarkRBACModelMedium(BenchmarkState state) {
+        state.e.enforce("user5001", "data150", "read");
     }
 }

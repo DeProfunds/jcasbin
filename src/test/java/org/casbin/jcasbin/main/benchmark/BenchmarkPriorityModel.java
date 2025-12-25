@@ -31,22 +31,26 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkPriorityModel {
-    private static Enforcer e;
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    static {
-        e = new Enforcer("examples/priority_model.conf", "", false);
-        e.enableAutoBuildRoleLinks(false);
-        e.addPolicy("alice", "data1", "read", "allow");
-        e.addPolicy("data1_deny_group", "data1", "read", "deny");
-        e.addPolicy("data1_deny_group", "data1", "write", "deny");
-        e.addPolicy("alice", "data1", "write", "allow");
-        e.addGroupingPolicy("alice", "data1_deny_group");
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/priority_model.conf", "", false);
+            e.enableAutoBuildRoleLinks(false);
+            e.addPolicy("alice", "data1", "read", "allow");
+            e.addPolicy("data1_deny_group", "data1", "read", "deny");
+            e.addPolicy("data1_deny_group", "data1", "write", "deny");
+            e.addPolicy("alice", "data1", "write", "allow");
+            e.addGroupingPolicy("alice", "data1_deny_group");
 
-        e.addPolicy("data2_allow_group", "data2", "read", "allow");
-        e.addPolicy("bob", "data2", "read", "deny");
-        e.addPolicy("bob", "data2", "write", "deny");
-        e.addGroupingPolicy("bob", "data2_allow_group");
-        e.buildRoleLinks();
+            e.addPolicy("data2_allow_group", "data2", "read", "allow");
+            e.addPolicy("bob", "data2", "read", "deny");
+            e.addPolicy("bob", "data2", "write", "deny");
+            e.addGroupingPolicy("bob", "data2_allow_group");
+            e.buildRoleLinks();
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -63,7 +67,7 @@ public class BenchmarkPriorityModel {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkPriorityModel() {
-        e.enforce("alice", "data1", "read");
+    public void benchmarkPriorityModel(BenchmarkState state) {
+        state.e.enforce("alice", "data1", "read");
     }
 }

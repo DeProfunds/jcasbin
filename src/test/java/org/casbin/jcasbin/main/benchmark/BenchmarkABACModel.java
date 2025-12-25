@@ -31,9 +31,6 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkABACModel {
-    private static Enforcer e;
-    private static TestResource data1;
-
     public static class TestResource {
         private String Name;
         private String Owner;
@@ -52,9 +49,16 @@ public class BenchmarkABACModel {
         }
     }
 
-    static {
-        e = new Enforcer("examples/abac_model.conf", "", false);
-        data1 = new TestResource("data1", "alice");
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
+        private TestResource data1;
+
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/abac_model.conf", "", false);
+            data1 = new TestResource("data1", "alice");
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -71,7 +75,7 @@ public class BenchmarkABACModel {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkABACModel() {
-        e.enforce("alice", data1, "read");
+    public void benchmarkABACModel(BenchmarkState state) {
+        state.e.enforce("alice", state.data1, "read");
     }
 }

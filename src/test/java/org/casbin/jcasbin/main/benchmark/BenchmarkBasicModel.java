@@ -27,10 +27,14 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkBasicModel {
-    private static Enforcer e;
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    static {
-        e = new Enforcer("examples/basic_model.conf", "examples/basic_policy.csv", false);
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/basic_model.conf", "examples/basic_policy.csv", false);
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -51,7 +55,7 @@ public class BenchmarkBasicModel {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkBasicModel() {
-        e.enforce("alice", "data1", "read");
+    public void benchmarkBasicModel(BenchmarkState state) {
+        state.e.enforce("alice", "data1", "read");
     }
 }

@@ -31,18 +31,22 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkRBACModelWithDomains {
-    private static Enforcer e;
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    static {
-        e = new Enforcer("examples/rbac_with_domains_model.conf", "", false);
-        e.enableAutoBuildRoleLinks(false);
-        e.addPolicy("admin", "domain1", "data1", "read");
-        e.addPolicy("admin", "domain1", "data1", "write");
-        e.addPolicy("admin", "domain2", "data2", "read");
-        e.addPolicy("admin", "domain2", "data2", "write");
-        e.addGroupingPolicy("alice", "admin", "domain1");
-        e.addGroupingPolicy("bob", "admin", "domain2");
-        e.buildRoleLinks();
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/rbac_with_domains_model.conf", "", false);
+            e.enableAutoBuildRoleLinks(false);
+            e.addPolicy("admin", "domain1", "data1", "read");
+            e.addPolicy("admin", "domain1", "data1", "write");
+            e.addPolicy("admin", "domain2", "data2", "read");
+            e.addPolicy("admin", "domain2", "data2", "write");
+            e.addGroupingPolicy("alice", "admin", "domain1");
+            e.addGroupingPolicy("bob", "admin", "domain2");
+            e.buildRoleLinks();
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -59,7 +63,7 @@ public class BenchmarkRBACModelWithDomains {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelWithDomains() {
-        e.enforce("alice", "domain1", "data1", "read");
+    public void benchmarkRBACModelWithDomains(BenchmarkState state) {
+        state.e.enforce("alice", "domain1", "data1", "read");
     }
 }

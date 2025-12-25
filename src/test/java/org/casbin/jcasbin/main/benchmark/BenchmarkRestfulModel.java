@@ -31,17 +31,21 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkRestfulModel {
-    private static Enforcer e;
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    static {
-        e = new Enforcer("examples/keymatch_model.conf", "", false);
-        e.enableAutoBuildRoleLinks(false);
-        e.addPolicy("alice", "/alice_data/*", "GET");
-        e.addPolicy("alice", "/alice_data/resource1", "POST");
-        e.addPolicy("bob", "/alice_data/resource2", "GET");
-        e.addPolicy("bob", "/bob_data/*", "POST");
-        e.addPolicy("cathy", "/cathy_data", "(GET)|(POST)");
-        e.buildRoleLinks();
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/keymatch_model.conf", "", false);
+            e.enableAutoBuildRoleLinks(false);
+            e.addPolicy("alice", "/alice_data/*", "GET");
+            e.addPolicy("alice", "/alice_data/resource1", "POST");
+            e.addPolicy("bob", "/alice_data/resource2", "GET");
+            e.addPolicy("bob", "/bob_data/*", "POST");
+            e.addPolicy("cathy", "/cathy_data", "(GET)|(POST)");
+            e.buildRoleLinks();
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -58,7 +62,7 @@ public class BenchmarkRestfulModel {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRestfulModel() {
-        e.enforce("alice", "/alice_data/resource1", "GET");
+    public void benchmarkRestfulModel(BenchmarkState state) {
+        state.e.enforce("alice", "/alice_data/resource1", "GET");
     }
 }

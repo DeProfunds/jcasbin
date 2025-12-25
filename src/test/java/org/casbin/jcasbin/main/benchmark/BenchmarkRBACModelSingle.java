@@ -27,11 +27,15 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkRBACModelSingle {
-    private static Enforcer e;
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    static {
-        e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv", false);
-        e.buildRoleLinks();
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv", false);
+            e.buildRoleLinks();
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -52,7 +56,7 @@ public class BenchmarkRBACModelSingle {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelSingle() {
-        e.enforce("alice", "data2", "read");
+    public void benchmarkRBACModelSingle(BenchmarkState state) {
+        state.e.enforce("alice", "data2", "read");
     }
 }

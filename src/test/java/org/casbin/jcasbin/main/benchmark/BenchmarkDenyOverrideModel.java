@@ -31,18 +31,22 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
 public class BenchmarkDenyOverrideModel {
-    private static Enforcer e;
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    static {
-        e = new Enforcer("examples/rbac_with_deny_model.conf", "", false);
-        e.enableAutoBuildRoleLinks(false);
-        e.addPolicy("alice", "data1", "read", "allow");
-        e.addPolicy("bob", "data2", "write", "allow");
-        e.addPolicy("data2_admin", "data2", "read", "allow");
-        e.addPolicy("data2_admin", "data2", "write", "allow");
-        e.addPolicy("alice", "data2", "write", "deny");
-        e.addGroupingPolicy("alice", "data2_admin");
-        e.buildRoleLinks();
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/rbac_with_deny_model.conf", "", false);
+            e.enableAutoBuildRoleLinks(false);
+            e.addPolicy("alice", "data1", "read", "allow");
+            e.addPolicy("bob", "data2", "write", "allow");
+            e.addPolicy("data2_admin", "data2", "read", "allow");
+            e.addPolicy("data2_admin", "data2", "write", "allow");
+            e.addPolicy("alice", "data2", "write", "deny");
+            e.addGroupingPolicy("alice", "data2_admin");
+            e.buildRoleLinks();
+        }
     }
 
     public static void main(String[] args) throws RunnerException {
@@ -59,7 +63,7 @@ public class BenchmarkDenyOverrideModel {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkDenyOverrideModel() {
-        e.enforce("alice", "data1", "read");
+    public void benchmarkDenyOverrideModel(BenchmarkState state) {
+        state.e.enforce("alice", "data1", "read");
     }
 }
