@@ -47,7 +47,7 @@ public class BenchmarkRBACModelSingle {
     }
 
     private static int getForks() {
-        return Integer.getInteger("jmh.forks", 1);
+        return Integer.getInteger("jmh.forks", 2);
     }
 
     @Threads(1)
