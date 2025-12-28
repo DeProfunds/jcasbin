@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -24,42 +24,44 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Benchmark for RBAC model with resource roles.
+ * Data scale: 6 rules (2 users, 2 roles).
+ */
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkRBACModelSmall {
+public class BenchmarkRBACModelWithResourceRoles {
     @State(Scope.Benchmark)
     public static class BenchmarkState {
         private Enforcer e;
 
         @Setup(Level.Trial)
         public void setup() {
-            e = new Enforcer("examples/rbac_model.conf", "", false);
-            e.enableAutoBuildRoleLinks(false);
-            for (int i = 0; i < 100; i++) {
-                e.addPolicy(String.format("group%d", i), String.format("data%d", i / 10), "read");
-            }
-            for (int i = 0; i < 1000; i++) {
-                e.addGroupingPolicy(String.format("user%d", i), String.format("group%d", i / 10));
-            }
-            e.buildRoleLinks();
+            e = new Enforcer(
+                "examples/rbac_with_resource_roles_model.conf",
+                "examples/rbac_with_resource_roles_policy.csv",
+                false
+            );
         }
     }
 
-    public static void main(String args[]) throws RunnerException {
+    public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(BenchmarkRBACModelSmall.class.getName())
-            .exclude("Pref")
-            .warmupIterations(3)
-            .measurementIterations(5)
-            .addProfiler(GCProfiler.class)
-            .forks(2)
-            .build();
+                .include(BenchmarkRBACModelWithResourceRoles.class.getName())
+                .exclude("Pref")
+                .warmupIterations(3)
+                .measurementIterations(5)
+                .addProfiler(GCProfiler.class)
+                .forks(2)
+                .build();
         new Runner(opt).run();
     }
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelSmall(BenchmarkState state) {
-        state.e.enforce("user501", "data9", "read");
+    public void benchmarkRBACModelWithResourceRoles(BenchmarkState state) {
+        state.e.enforce("alice", "data1", "read");
     }
+    
+    
 }

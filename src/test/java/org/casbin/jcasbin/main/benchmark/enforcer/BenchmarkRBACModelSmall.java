@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -26,7 +26,11 @@ import java.util.concurrent.TimeUnit;
 
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkRBACModelMedium {
+@Warmup(iterations = 3)
+@Measurement(iterations = 5)
+@Threads(1)
+@Fork(1)
+public class BenchmarkRBACModelSmall {
     @State(Scope.Benchmark)
     public static class BenchmarkState {
         private Enforcer e;
@@ -35,10 +39,10 @@ public class BenchmarkRBACModelMedium {
         public void setup() {
             e = new Enforcer("examples/rbac_model.conf", "", false);
             e.enableAutoBuildRoleLinks(false);
-            for (int i = 0; i < 1000; i++) {
+            for (int i = 0; i < 100; i++) {
                 e.addPolicy(String.format("group%d", i), String.format("data%d", i / 10), "read");
             }
-            for (int i = 0; i < 10000; i++) {
+            for (int i = 0; i < 1000; i++) {
                 e.addGroupingPolicy(String.format("user%d", i), String.format("group%d", i / 10));
             }
             e.buildRoleLinks();
@@ -47,19 +51,16 @@ public class BenchmarkRBACModelMedium {
 
     public static void main(String args[]) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(BenchmarkRBACModelMedium.class.getName())
+            .include(BenchmarkRBACModelSmall.class.getName())
             .exclude("Pref")
-            .warmupIterations(3)
-            .measurementIterations(5)
             .addProfiler(GCProfiler.class)
-            .forks(2)
+            .forks(1)
             .build();
         new Runner(opt).run();
     }
 
-    @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelMedium(BenchmarkState state) {
-        state.e.enforce("user5001", "data150", "read");
+    public void benchmarkRBACModelSmall(BenchmarkState state) {
+        state.e.enforce("user501", "data9", "read");
     }
 }

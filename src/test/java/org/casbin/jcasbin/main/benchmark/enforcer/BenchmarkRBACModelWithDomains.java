@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -26,37 +26,33 @@ import java.util.concurrent.TimeUnit;
 
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkRBACModelSingle {
+@Warmup(iterations = 3)
+@Measurement(iterations = 5)
+@Threads(1)
+@Fork(1)
+public class BenchmarkRBACModelWithDomains {
     @State(Scope.Benchmark)
     public static class BenchmarkState {
         private Enforcer e;
 
         @Setup(Level.Trial)
         public void setup() {
-            e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv", false);
-            e.buildRoleLinks();
+            e = new Enforcer("examples/rbac_with_domains_model.conf", "examples/rbac_with_domains_policy.csv", false);
         }
     }
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(BenchmarkRBACModelSingle.class.getName())
-            .exclude("Pref")
-            .warmupIterations(3)
-            .measurementIterations(5)
-            .addProfiler(GCProfiler.class)
-            .forks(getForks())
-            .build();
+                .include(BenchmarkRBACModelWithDomains.class.getName())
+                .exclude("Pref")
+                .addProfiler(GCProfiler.class)
+                .forks(1)
+                .build();
         new Runner(opt).run();
     }
 
-    private static int getForks() {
-        return Integer.getInteger("jmh.forks", 2);
-    }
-
-    @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelSingle(BenchmarkState state) {
-        state.e.enforce("alice", "data2", "read");
+    public void benchmarkRBACModelWithDomains(BenchmarkState state) {
+        state.e.enforce("alice", "domain1", "data1", "read");
     }
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -24,46 +24,39 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Benchmark for RBAC model with resource roles.
- * Data scale: 6 rules (2 users, 2 roles).
- */
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkRBACModelWithResourceRoles {
+public class BenchmarkRBACModelSingle {
     @State(Scope.Benchmark)
     public static class BenchmarkState {
         private Enforcer e;
 
         @Setup(Level.Trial)
         public void setup() {
-            e = new Enforcer("examples/rbac_with_resource_roles_model.conf", "", false);
-            e.enableAutoBuildRoleLinks(false);
-            e.addPolicy("alice", "data1", "read");
-            e.addPolicy("bob", "data2", "write");
-            e.addPolicy("data_group_admin", "data_group", "write");
-            e.addGroupingPolicy("alice", "data_group_admin");
-            e.addNamedGroupingPolicy("g2", "data1", "data_group");
-            e.addNamedGroupingPolicy("g2", "data2", "data_group");
+            e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv", false);
             e.buildRoleLinks();
         }
     }
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(BenchmarkRBACModelWithResourceRoles.class.getName())
-                .exclude("Pref")
-                .warmupIterations(3)
-                .measurementIterations(5)
-                .addProfiler(GCProfiler.class)
-                .forks(2)
-                .build();
+            .include(BenchmarkRBACModelSingle.class.getName())
+            .exclude("Pref")
+            .warmupIterations(3)
+            .measurementIterations(5)
+            .addProfiler(GCProfiler.class)
+            .forks(getForks())
+            .build();
         new Runner(opt).run();
+    }
+
+    private static int getForks() {
+        return Integer.getInteger("jmh.forks", 2);
     }
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelWithResourceRoles(BenchmarkState state) {
-        state.e.enforce("alice", "data1", "read");
+    public void benchmarkRBACModelSingle(BenchmarkState state) {
+        state.e.enforce("alice", "data2", "read");
     }
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -25,33 +25,25 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Benchmark for RBAC model with domains.
- * Data scale: 6 rules (2 users, 1 role, 2 domains).
+ * Benchmark for RESTful (KeyMatch) model.
+ * Data scale: 5 rules (3 users).
  */
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkRBACModelWithDomains {
+public class BenchmarkRestfulModel {
     @State(Scope.Benchmark)
     public static class BenchmarkState {
         private Enforcer e;
 
         @Setup(Level.Trial)
         public void setup() {
-            e = new Enforcer("examples/rbac_with_domains_model.conf", "", false);
-            e.enableAutoBuildRoleLinks(false);
-            e.addPolicy("admin", "domain1", "data1", "read");
-            e.addPolicy("admin", "domain1", "data1", "write");
-            e.addPolicy("admin", "domain2", "data2", "read");
-            e.addPolicy("admin", "domain2", "data2", "write");
-            e.addGroupingPolicy("alice", "admin", "domain1");
-            e.addGroupingPolicy("bob", "admin", "domain2");
-            e.buildRoleLinks();
+            e = new Enforcer("examples/keymatch_model.conf", "examples/keymatch_policy.csv", false);
         }
     }
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(BenchmarkRBACModelWithDomains.class.getName())
+                .include(BenchmarkRestfulModel.class.getName())
                 .exclude("Pref")
                 .warmupIterations(3)
                 .measurementIterations(5)
@@ -63,7 +55,7 @@ public class BenchmarkRBACModelWithDomains {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRBACModelWithDomains(BenchmarkState state) {
-        state.e.enforce("alice", "domain1", "data1", "read");
+    public void benchmarkRestfulModel(BenchmarkState state) {
+        state.e.enforce("alice", "/alice_data/resource1", "GET");
     }
 }

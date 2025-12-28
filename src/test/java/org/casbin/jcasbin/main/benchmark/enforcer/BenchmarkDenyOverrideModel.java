@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -25,32 +25,33 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Benchmark for RESTful (KeyMatch) model.
- * Data scale: 5 rules (3 users).
+ * Benchmark for Deny-override model.
+ * Data scale: 6 rules (2 users, 1 role).
  */
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkRestfulModel {
+public class BenchmarkDenyOverrideModel {
     @State(Scope.Benchmark)
     public static class BenchmarkState {
         private Enforcer e;
 
         @Setup(Level.Trial)
         public void setup() {
-            e = new Enforcer("examples/keymatch_model.conf", "", false);
+            e = new Enforcer("examples/rbac_with_deny_model.conf", "", false);
             e.enableAutoBuildRoleLinks(false);
-            e.addPolicy("alice", "/alice_data/*", "GET");
-            e.addPolicy("alice", "/alice_data/resource1", "POST");
-            e.addPolicy("bob", "/alice_data/resource2", "GET");
-            e.addPolicy("bob", "/bob_data/*", "POST");
-            e.addPolicy("cathy", "/cathy_data", "(GET)|(POST)");
+            e.addPolicy("alice", "data1", "read", "allow");
+            e.addPolicy("bob", "data2", "write", "allow");
+            e.addPolicy("data2_admin", "data2", "read", "allow");
+            e.addPolicy("data2_admin", "data2", "write", "allow");
+            e.addPolicy("alice", "data2", "write", "deny");
+            e.addGroupingPolicy("alice", "data2_admin");
             e.buildRoleLinks();
         }
     }
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(BenchmarkRestfulModel.class.getName())
+                .include(BenchmarkDenyOverrideModel.class.getName())
                 .exclude("Pref")
                 .warmupIterations(3)
                 .measurementIterations(5)
@@ -62,7 +63,7 @@ public class BenchmarkRestfulModel {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkRestfulModel(BenchmarkState state) {
-        state.e.enforce("alice", "/alice_data/resource1", "GET");
+    public void benchmarkDenyOverrideModel(BenchmarkState state) {
+        state.e.enforce("alice", "data1", "read");
     }
 }

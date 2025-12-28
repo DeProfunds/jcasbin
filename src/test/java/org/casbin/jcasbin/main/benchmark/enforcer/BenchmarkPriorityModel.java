@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -24,46 +24,35 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Benchmark for Deny-override model.
- * Data scale: 6 rules (2 users, 1 role).
- */
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkDenyOverrideModel {
+@Warmup(iterations = 3)
+@Measurement(iterations = 5)
+@Threads(1)
+@Fork(1)
+public class BenchmarkPriorityModel {
     @State(Scope.Benchmark)
     public static class BenchmarkState {
         private Enforcer e;
 
         @Setup(Level.Trial)
         public void setup() {
-            e = new Enforcer("examples/rbac_with_deny_model.conf", "", false);
-            e.enableAutoBuildRoleLinks(false);
-            e.addPolicy("alice", "data1", "read", "allow");
-            e.addPolicy("bob", "data2", "write", "allow");
-            e.addPolicy("data2_admin", "data2", "read", "allow");
-            e.addPolicy("data2_admin", "data2", "write", "allow");
-            e.addPolicy("alice", "data2", "write", "deny");
-            e.addGroupingPolicy("alice", "data2_admin");
-            e.buildRoleLinks();
+            e = new Enforcer("examples/priority_model.conf", "examples/priority_policy.csv", false);
         }
     }
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(BenchmarkDenyOverrideModel.class.getName())
+                .include(BenchmarkPriorityModel.class.getName())
                 .exclude("Pref")
-                .warmupIterations(3)
-                .measurementIterations(5)
                 .addProfiler(GCProfiler.class)
-                .forks(2)
+                .forks(1)
                 .build();
         new Runner(opt).run();
     }
 
-    @Threads(1)
     @Benchmark
-    public void benchmarkDenyOverrideModel(BenchmarkState state) {
+    public void benchmarkPriorityModel(BenchmarkState state) {
         state.e.enforce("alice", "data1", "read");
     }
 }

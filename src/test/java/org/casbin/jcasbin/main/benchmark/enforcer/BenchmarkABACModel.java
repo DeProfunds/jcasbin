@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -25,37 +25,45 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Benchmark for Priority model.
- * Data scale: 9 rules (2 users, 2 roles).
+ * Benchmark for ABAC model.
+ * Data scale: 0 rules (0 user).
  */
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkPriorityModel {
+public class BenchmarkABACModel {
+    public static class TestResource {
+        private String Name;
+        private String Owner;
+
+        public TestResource(String name, String owner) {
+            this.Name = name;
+            this.Owner = owner;
+        }
+
+        public String getName() {
+            return Name;
+        }
+
+        public String getOwner() {
+            return Owner;
+        }
+    }
+
     @State(Scope.Benchmark)
     public static class BenchmarkState {
         private Enforcer e;
+        private TestResource data1;
 
         @Setup(Level.Trial)
         public void setup() {
-            e = new Enforcer("examples/priority_model.conf", "", false);
-            e.enableAutoBuildRoleLinks(false);
-            e.addPolicy("alice", "data1", "read", "allow");
-            e.addPolicy("data1_deny_group", "data1", "read", "deny");
-            e.addPolicy("data1_deny_group", "data1", "write", "deny");
-            e.addPolicy("alice", "data1", "write", "allow");
-            e.addGroupingPolicy("alice", "data1_deny_group");
-
-            e.addPolicy("data2_allow_group", "data2", "read", "allow");
-            e.addPolicy("bob", "data2", "read", "deny");
-            e.addPolicy("bob", "data2", "write", "deny");
-            e.addGroupingPolicy("bob", "data2_allow_group");
-            e.buildRoleLinks();
+            e = new Enforcer("examples/abac_model.conf", "", false);
+            data1 = new TestResource("data1", "alice");
         }
     }
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(BenchmarkPriorityModel.class.getName())
+                .include(BenchmarkABACModel.class.getName())
                 .exclude("Pref")
                 .warmupIterations(3)
                 .measurementIterations(5)
@@ -67,7 +75,7 @@ public class BenchmarkPriorityModel {
 
     @Threads(1)
     @Benchmark
-    public void benchmarkPriorityModel(BenchmarkState state) {
-        state.e.enforce("alice", "data1", "read");
+    public void benchmarkABACModel(BenchmarkState state) {
+        state.e.enforce("alice", state.data1, "read");
     }
 }

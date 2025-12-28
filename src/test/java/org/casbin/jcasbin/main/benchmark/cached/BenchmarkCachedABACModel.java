@@ -1,20 +1,6 @@
-// Copyright 2020 The casbin Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+package org.casbin.jcasbin.main.benchmark.cached;
 
-package org.casbin.jcasbin.main.benchmark;
-
-import org.casbin.jcasbin.main.Enforcer;
+import org.casbin.jcasbin.main.CachedEnforcer;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
@@ -24,13 +10,13 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Benchmark for ABAC model.
- * Data scale: 0 rules (0 user).
- */
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkABACModel {
+@Warmup(iterations = 3)
+@Measurement(iterations = 5)
+@Threads(1)
+@Fork(1)
+public class BenchmarkCachedABACModel {
     public static class TestResource {
         private String Name;
         private String Owner;
@@ -51,31 +37,29 @@ public class BenchmarkABACModel {
 
     @State(Scope.Benchmark)
     public static class BenchmarkState {
-        private Enforcer e;
+        private CachedEnforcer e;
         private TestResource data1;
 
         @Setup(Level.Trial)
         public void setup() {
-            e = new Enforcer("examples/abac_model.conf", "", false);
+            e = new CachedEnforcer("examples/abac_model.conf", "", false);
             data1 = new TestResource("data1", "alice");
         }
     }
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(BenchmarkABACModel.class.getName())
+                .include(BenchmarkCachedABACModel.class.getName())
                 .exclude("Pref")
-                .warmupIterations(3)
-                .measurementIterations(5)
                 .addProfiler(GCProfiler.class)
-                .forks(2)
+                .forks(1)
                 .build();
         new Runner(opt).run();
     }
 
-    @Threads(1)
     @Benchmark
-    public void benchmarkABACModel(BenchmarkState state) {
+    public void benchmarkCachedABACModel(BenchmarkState state) {
         state.e.enforce("alice", state.data1, "read");
     }
 }
+

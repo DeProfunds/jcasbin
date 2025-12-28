@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.casbin.jcasbin.rbac.RoleManager;
@@ -23,6 +23,9 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -49,7 +52,7 @@ public class BenchmarkRoleManager {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(org.casbin.jcasbin.main.benchmark.BenchmarkRoleManager.class.getName())
+            .include(BenchmarkRoleManager.class.getName())
             .exclude("Pref")
             .exclude("random")
             .build();
@@ -62,23 +65,23 @@ public class BenchmarkRoleManager {
         mediumEnforcer = initEnforcer(1000, 10000);
         largeEnforcer = initEnforcer(10000, 100000);
 
-        buildRoleLinksWithPattern = new Enforcer("examples/performance/rbac_with_pattern_large_scale_model.conf", "examples/performance/rbac_with_pattern_large_scale_policy.csv");
+        buildRoleLinksWithPattern = new Enforcer(resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_model.conf"), resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_policy.csv"));
         buildRoleLinksWithPattern.addNamedMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
 
-        buildRoleLinksWithDomainPattern = new Enforcer("examples/performance/rbac_with_pattern_large_scale_model.conf", "examples/performance/rbac_with_pattern_large_scale_policy.csv");
+        buildRoleLinksWithDomainPattern = new Enforcer(resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_model.conf"), resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_policy.csv"));
         buildRoleLinksWithDomainPattern.addNamedDomainMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
 
-        buildRoleLinksWithPatternAndDomainPattern = new Enforcer("examples/performance/rbac_with_pattern_large_scale_model.conf", "examples/performance/rbac_with_pattern_large_scale_policy.csv");
+        buildRoleLinksWithPatternAndDomainPattern = new Enforcer(resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_model.conf"), resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_policy.csv"));
         buildRoleLinksWithPatternAndDomainPattern.addNamedMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
         buildRoleLinksWithPatternAndDomainPattern.addNamedDomainMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
 
-        hasLinkWithPattern = new Enforcer("examples/performance/rbac_with_pattern_large_scale_model.conf", "examples/performance/rbac_with_pattern_large_scale_policy.csv");
+        hasLinkWithPattern = new Enforcer(resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_model.conf"), resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_policy.csv"));
         hasLinkWithPattern.addNamedMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
 
-        hasLinkWithDomainPattern = new Enforcer("examples/performance/rbac_with_pattern_large_scale_model.conf", "examples/performance/rbac_with_pattern_large_scale_policy.csv");
+        hasLinkWithDomainPattern = new Enforcer(resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_model.conf"), resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_policy.csv"));
         hasLinkWithDomainPattern.addNamedDomainMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
 
-        hasLinkWithPatternAndDomainPattern = new Enforcer("examples/performance/rbac_with_pattern_large_scale_model.conf", "examples/performance/rbac_with_pattern_large_scale_policy.csv");
+        hasLinkWithPatternAndDomainPattern = new Enforcer(resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_model.conf"), resolveExamplePath("examples/performance/rbac_with_pattern_large_scale_policy.csv"));
         hasLinkWithPatternAndDomainPattern.addNamedMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
         hasLinkWithPatternAndDomainPattern.addNamedDomainMatchingFunc("g", "", BuiltInFunctions::keyMatch4);
     }
@@ -141,7 +144,7 @@ public class BenchmarkRoleManager {
     }
 
     static Enforcer initEnforcer(int roleNum, int userNum) {
-        Enforcer enforcer = new Enforcer("examples/rbac_model.conf", "", false);
+        Enforcer enforcer = new Enforcer(resolveExamplePath("examples/rbac_model.conf"), "", false);
         enforcer.enableAutoBuildRoleLinks(false);
         // roleNum roles, roleNum/10 resources.
         for (int i = 0; i < roleNum; i++) {
@@ -152,5 +155,30 @@ public class BenchmarkRoleManager {
             enforcer.addGroupingPolicy("user" + i, "group" + i / 10);
         }
         return enforcer;
+    }
+
+    private static String resolveExamplePath(String relativePath) {
+        Path direct = Paths.get(relativePath);
+        if (Files.exists(direct)) {
+            return direct.toString();
+        }
+
+        Path fromRepoRoot = Paths.get("jcasbin").resolve(relativePath);
+        if (Files.exists(fromRepoRoot)) {
+            return fromRepoRoot.toString();
+        }
+
+        Path base = Paths.get(System.getProperty("user.dir")).toAbsolutePath().normalize();
+        for (int i = 0; i < 8; i++) {
+            Path candidate = base.resolve(relativePath);
+            if (Files.exists(candidate)) {
+                return candidate.toString();
+            }
+            base = base.getParent();
+            if (base == null) {
+                break;
+            }
+        }
+        return relativePath;
     }
 }
