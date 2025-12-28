@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -24,28 +24,38 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+/**
+ * Benchmark for RESTful (KeyMatch) model.
+ * Data scale: 5 rules (3 users).
+ */
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkBasicModel {
-    private static Enforcer e = new Enforcer("examples/basic_model.conf", "examples/basic_policy.csv", false);
+public class BenchmarkRestfulModel {
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    public static void main(String args[]) throws RunnerException {
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/keymatch_model.conf", "examples/keymatch_policy.csv", false);
+        }
+    }
+
+    public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(BenchmarkBasicModel.class.getName())
-            .exclude("Pref")
-            .warmupIterations(3)
-            .measurementIterations(3)
-            .addProfiler(GCProfiler.class)
-            .forks(1)
-            .build();
+                .include(BenchmarkRestfulModel.class.getName())
+                .exclude("Pref")
+                .warmupIterations(3)
+                .measurementIterations(5)
+                .addProfiler(GCProfiler.class)
+                .forks(2)
+                .build();
         new Runner(opt).run();
     }
 
     @Threads(1)
     @Benchmark
-    public static void benchmarkBasicModel() {
-        for (int i = 0; i < 1000; i++) {
-            e.enforce("alice", "data1", "read");
-        }
+    public void benchmarkRestfulModel(BenchmarkState state) {
+        state.e.enforce("alice", "/alice_data/resource1", "GET");
     }
 }

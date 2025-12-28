@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -24,37 +24,43 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkKeyMatchModel {
-    private static Enforcer e = new Enforcer("examples/keymatch_model.conf", "examples/keymatch_policy.csv", false);
-    private static Enforcer e2 = new Enforcer("examples/keymatch2_model.conf", "examples/keymatch2_policy.csv", false);
+@Warmup(iterations = 3)
+@Measurement(iterations = 5)
+@Threads(1)
+@Fork(1)
+public class BenchmarkRBACModelMedium {
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
+
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/rbac_model.conf", "", false);
+            e.enableAutoBuildRoleLinks(false);
+            for (int i = 0; i < 1000; i++) {
+                e.addPolicy(String.format("group%d", i), String.format("data%d", i / 10), "read");
+            }
+            for (int i = 0; i < 10000; i++) {
+                e.addGroupingPolicy(String.format("user%d", i), String.format("group%d", i / 10));
+            }
+            e.buildRoleLinks();
+        }
+    }
 
     public static void main(String args[]) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(BenchmarkKeyMatchModel.class.getName())
+            .include(BenchmarkRBACModelMedium.class.getName())
             .exclude("Pref")
-            .warmupIterations(3)
-            .measurementIterations(3)
             .addProfiler(GCProfiler.class)
             .forks(1)
             .build();
         new Runner(opt).run();
     }
 
-    @Threads(1)
     @Benchmark
-    public static void benchmarkKeyMatchModel() {
-        for (int i = 0; i < 1000; i++) {
-            e.enforce("alice", "/alice_data/resource1", "GET");
-        }
-    }
-
-    @Threads(1)
-    @Benchmark
-    public static void benchmarkKeyMatch2Model() {
-        for (int i = 0; i < 1000; i++) {
-            e2.enforce("alice", "/alice_data/resource1", "GET");
-        }
+    public void benchmarkRBACModelMedium(BenchmarkState state) {
+        state.e.enforce("user5001", "data99", "read");
     }
 }

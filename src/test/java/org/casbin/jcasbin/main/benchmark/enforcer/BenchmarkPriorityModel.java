@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -24,28 +24,35 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.util.concurrent.TimeUnit;
 
-@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
 @BenchmarkMode(Mode.AverageTime)
-public class BenchmarkRBACModelSingle {
-    private static Enforcer e = new Enforcer("examples/rbac_model.conf", "examples/rbac_policy.csv", false);
+@Warmup(iterations = 3)
+@Measurement(iterations = 5)
+@Threads(1)
+@Fork(1)
+public class BenchmarkPriorityModel {
+    @State(Scope.Benchmark)
+    public static class BenchmarkState {
+        private Enforcer e;
 
-    public static void main(String args[]) throws RunnerException {
+        @Setup(Level.Trial)
+        public void setup() {
+            e = new Enforcer("examples/priority_model.conf", "examples/priority_policy.csv", false);
+        }
+    }
+
+    public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(BenchmarkRBACModelSingle.class.getName())
-            .exclude("Pref")
-            .warmupIterations(3)
-            .measurementIterations(3)
-            .addProfiler(GCProfiler.class)
-            .forks(1)
-            .build();
+                .include(BenchmarkPriorityModel.class.getName())
+                .exclude("Pref")
+                .addProfiler(GCProfiler.class)
+                .forks(1)
+                .build();
         new Runner(opt).run();
     }
 
-    @Threads(1)
     @Benchmark
-    public static void benchmarkRBACModel() {
-        for (int i = 0; i < 1000; i++) {
-            e.enforce("alice", "data2", "read");
-        }
+    public void benchmarkPriorityModel(BenchmarkState state) {
+        state.e.enforce("alice", "data1", "read");
     }
 }

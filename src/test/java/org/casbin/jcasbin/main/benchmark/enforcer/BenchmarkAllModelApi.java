@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package org.casbin.jcasbin.main.benchmark;
+package org.casbin.jcasbin.main.benchmark.enforcer;
 
 import org.casbin.jcasbin.main.Enforcer;
 import org.openjdk.jmh.annotations.*;
@@ -36,9 +36,9 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.AverageTime)
 @Warmup(iterations = 3)
-@Measurement(iterations = 3)
+@Measurement(iterations = 5)
 @Threads(1)
-@Fork(1)
+@Fork(2)
 @State(value = Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 public class BenchmarkAllModelApi {
@@ -50,7 +50,7 @@ public class BenchmarkAllModelApi {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-            .include(org.casbin.jcasbin.main.benchmark.BenchmarkAllModelApi.class.getName())
+            .include(BenchmarkAllModelApi.class.getName())
             .exclude("Pref")
             .exclude("random")
             .build();
